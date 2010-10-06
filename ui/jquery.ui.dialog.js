@@ -312,7 +312,7 @@ $.widget("ui.dialog", {
 		self._size();
 		self._position(options.position);
 		uiDialog.show(options.show);
-		if ( self.overlay ) self.overlay.lockFocus(uiDialog);
+		if ( self.overlay !== null ) self.overlay.lockFocus(uiDialog);
 		self.moveToTop(true);
 
 		// prevent tabbing out of modal dialogs
@@ -699,7 +699,6 @@ $.extend($.ui.dialog.overlay, {
 			$(document).bind('keydown.dialog-overlay', function(event) {
 				if (dialog.options.closeOnEscape && event.keyCode &&
 					event.keyCode === $.ui.keyCode.ESCAPE) {
-					
 					dialog.close(event);
 					event.preventDefault();
 				}
@@ -822,10 +821,10 @@ $.extend($.ui.dialog.overlay.prototype, {
 	},
 	lockFocus: function($el) {
 		var focusables = $(':focusable',$el),
-			firstFocusable = focusables.first(),
-			lastFocusable = focusables.last();
+			firstFocusable = focusables.first()[0],
+			lastFocusable = focusables.last()[0];
 		$(':focusable').live('focus', function(event) {
-			if ( !inArray(focusables, event.currentTarget) ) {
+			if ( $.inArray(event.currentTarget, focusables) == -1 ) {
 				firstFocusable.focus();
 			}
 		});
