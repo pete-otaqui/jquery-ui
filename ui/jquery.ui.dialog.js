@@ -312,34 +312,35 @@ $.widget("ui.dialog", {
 		self._size();
 		self._position(options.position);
 		uiDialog.show(options.show);
+		if ( self.overlay ) self.overlay.lockFocus(uiDialog);
 		self.moveToTop(true);
 
 		// prevent tabbing out of modal dialogs
-		if (options.modal) {
-			uiDialog.bind('keypress.ui-dialog', function(event) {
-				if (event.keyCode !== $.ui.keyCode.TAB) {
-					return;
-				}
-
-				var tabbables = $(':tabbable', this),
-					first = tabbables.filter(':first'),
-					last  = tabbables.filter(':last');
-
-				if (event.target === last[0] && !event.shiftKey) {
-					first.focus(1);
-					return false;
-				} else if (event.target === first[0] && event.shiftKey) {
-					last.focus(1);
-					return false;
-				}
-			});
-		}
+		// if (options.modal) {
+		// 	uiDialog.bind('keypress.ui-dialog', function(event) {
+		// 		if (event.keyCode !== $.ui.keyCode.TAB) {
+		// 			return;
+		// 		}
+		// 
+		// 		var tabbables = $(':tabbable', this),
+		// 			first     = tabbables.filter(':first'),
+		// 			last      = tabbables.filter(':last');
+		// 
+		// 		if (event.target === last[0] && !event.shiftKey) {
+		// 			first.focus(1);
+		// 			return false;
+		// 		} else if (event.target === first[0] && event.shiftKey) {
+		// 			last.focus(1);
+		// 			return false;
+		// 		}
+		// 	});
+		// }
 
 		// set focus to the first tabbable element in the content area or the first button
 		// if there are no tabbable elements, set focus on the dialog itself
-		$(self.element.find(':tabbable').get().concat(
-			uiDialog.find('.ui-dialog-buttonpane :tabbable').get().concat(
-				uiDialog.get()))).eq(0).focus();
+		// $(self.element.find(':tabbable').get().concat(
+		// 	uiDialog.find('.ui-dialog-buttonpane :tabbable').get().concat(
+		// 		uiDialog.get()))).eq(0).focus();
 
 		self._isOpen = true;
 		self._trigger('open');
@@ -688,31 +689,19 @@ $.extend($.ui.dialog, {
 	}
 });
 
+function inArray(parent, child) {
+	var i=parent.length;
+	while (i--) if ( parent[i] == child ) return true;
+	//alert('not in array');
+	return false;
+}
+
 $.extend($.ui.dialog.overlay, {
 	instances: [],
 	// reuse old instances due to IE memory leak with alpha transparency (see #5185)
 	oldInstances: [],
-	maxZ: 0,
-	events: $.map('focus,mousedown,mouseup,keydown,keypress,click'.split(','),
-		function(event) { return event + '.dialog-overlay'; }).join(' '),
 	create: function(dialog) {
 		if (this.instances.length === 0) {
-			// prevent use of anchors and inputs
-			// we use a setTimeout in case the overlay is created from an
-			// event that we're going to be cancelling (see #2804)
-			setTimeout(function() {
-				// handle $(el).dialog().dialog('close') (see #4065)
-				if ($.ui.dialog.overlay.instances.length) {
-					$(document).bind($.ui.dialog.overlay.events, function(event) {
-						// stop events if the z-index of the target is < the z-index of the overlay
-						// we cannot return true when we don't want to cancel the event (#3523)
-						if ($(event.target).zIndex() < $.ui.dialog.overlay.maxZ) {
-							return false;
-						}
-					});
-				}
-			}, 1);
-
 			// allow closing by pressing the escape key
 			$(document).bind('keydown.dialog-overlay', function(event) {
 				if (dialog.options.closeOnEscape && event.keyCode &&
@@ -743,6 +732,7 @@ $.extend($.ui.dialog.overlay, {
 	},
 
 	destroy: function($el) {
+		$(':focusable').die('focus');
 		this.oldInstances.push(this.instances.splice($.inArray($el, this.instances), 1)[0]);
 
 		if (this.instances.length === 0) {
@@ -836,6 +826,16 @@ $.extend($.ui.dialog.overlay, {
 $.extend($.ui.dialog.overlay.prototype, {
 	destroy: function() {
 		$.ui.dialog.overlay.destroy(this.$el);
+	},
+	lockFocus: function($el) {
+		var focusables = $(':focusable',$el),
+			firstFocusable = focusables.first(),
+			lastFocusable = focusables.last();
+		$(':focusable').live('focus', function(event) {
+			if ( !inArray(focusables, event.currentTarget) ) {
+				firstFocusable.focus();
+			}
+		});
 	}
 });
 
