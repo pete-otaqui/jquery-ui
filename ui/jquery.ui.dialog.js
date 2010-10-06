@@ -689,13 +689,6 @@ $.extend($.ui.dialog, {
 	}
 });
 
-function inArray(parent, child) {
-	var i=parent.length;
-	while (i--) if ( parent[i] == child ) return true;
-	//alert('not in array');
-	return false;
-}
-
 $.extend($.ui.dialog.overlay, {
 	instances: [],
 	// reuse old instances due to IE memory leak with alpha transparency (see #5185)
