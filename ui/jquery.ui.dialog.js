@@ -820,56 +820,27 @@ $.extend($.ui.dialog.overlay.prototype, {
 		$.ui.dialog.overlay.destroy(this.$el);
 	},
 	lockFocus: function($el) {
-		// var focusables = $(':focusable',$el),
-		// 	shiftKeyWithTab = false,
-		// 	currentElement = null,
-		// 	lastFocusedElement = null;
-		// 
-		// focusables.sort(function(a,b){return parseInt(a.tabIndex)-parseInt(b.tabIndex)});
-		// 
-		// var firstFocusable = focusables.first()[0],
-		// 	lastFocusable  = focusables.last()[0];
-		// 
-		// 
-		// 
-		// focusables.bind('keydown', function(event) {
-		// 		if ( event.keyCode !== $.ui.keyCode.TAB ) return;
-		// 		shiftKeyWithTab = event.shiftKey;
-		// 	})
-		// 	.bind('blur', function(event) {
-		// 		lastFocusedElement = event.currentTarget;
-		// 		currentElement = document.activeElement;
-		// 	});
 		var focusables = this._sortedFocusables($el);
 		this._trackFocusedElement( $el, this);
 		this._trackShiftKey( focusables, this);
 		var modal = this;
-		console.log(focusables);
 		$(document).bind('focusin', function(event) {
 			var focused = event.originalTarget;
-				console.log(focusables.index(focused));
 			if ( focusables.index(focused) == -1 ) {
 				// has the dom inside the modal area been updated?
 				focusables = modal._sortedFocusables($el);
 				if ( focusables.index(focused) == -1 ) {
-					var previous = modal._focusedElement;
-					var backwards = modal._shiftKey;
-					var next = modal._nextItemByTabIndex(focusables, previous, backwards);
-					next.focus();
-					//console.log(modal._nextItemByTabIndex(focusables, previous, backwards));
-					//modal._nextItemByTabIndex(focusables).focus();
+					modal._nextItemByTabIndex(focusables, modal._focusedElement, modal._shiftKey).focus();
 				}
 			}
 		});
 	},
 	unlockFocus: function($el) {
-		
-	},
-	_sortedFocusables: function($el) {
-		return $(':focusable', $el).sort(function(a,b){return parseInt(a.tabIndex)-parseInt(b.tabIndex);});
-	},
-	_shiftKey: false,
-	_focusedElement: null,
+		var focusables = this._sortedFocusables($el);
+		this._untrackFocusedElement($el);
+		this._untrackShiftKey(focusables);
+		$(document).unbind('focusin');
+	}
 	_nextItemByTabIndex: function($list, previous, backwards) {
 		var index = $list.index(previous);
 		if ( !backwards ) {
@@ -879,18 +850,33 @@ $.extend($.ui.dialog.overlay.prototype, {
 		}
 		return $list[index];
 	},
+	_shiftKey: false,
+	_focusedElement: null,
 	_trackFocusedElement: function($list, store) {
-		$list.bind('focusin', function(event) {
-			store._focusedElement = event.originalTarget;
-		});
+		$list.bind('focusin', {store:this}, this._trackFocusedElementEvent);
+		return $list;
+	},
+	_trackFocusedElementEvent: function(event) {
+		event.data.store._focusedElement = event.originalTarget;
+	},
+	_untrackFocusedElement: function($list) {
+		$list.unbind('focusin', this._trackFocusedElementEvent);
 		return $list;
 	},
 	_trackShiftKey: function($focusables, store) {
-		$focusables.bind('keydown', function(event) {
-			if ( event.keyCode !== $.ui.keyCode.TAB ) return;
-			store._shiftKey = event.shiftKey;
-		});
+		$focusables.bind('keydown', {store:this}, this._trackShiftKeyEvent);
 		return $focusables;
+	},
+	_trackShiftKeyEvent: function(event) {
+		if ( event.keyCode !== $.ui.keyCode.TAB ) return;
+		event.data.store._shiftKey = event.shiftKey;
+	},
+	_untrackShiftKey: function($focusables) {
+		$focusables.unbind('keydown', this._trackShiftKeyEvent);
+		return $list;
+	},
+	_sortedFocusables: function($el) {
+		return $(':focusable', $el).sort(function(a,b){return parseInt(a.tabIndex)-parseInt(b.tabIndex);});
 	}
 	
 });
