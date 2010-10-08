@@ -823,17 +823,23 @@ $.extend($.ui.dialog.overlay.prototype, {
 		var focusables = this._sortedFocusables($el);
 		this._trackFocusedElement( $el, this);
 		this._trackShiftKey( focusables, this);
-		$(document).bind('focusin', {modal:this, focusables:focusables}, this._lockFocusEvent);
+		this._captureTabOutOfLastElement( $el );
+		$(document).bind('focusin', {el: $el, modal:this, focusables:focusables}, this._lockFocusEvent);
+		this.el = $el;
+		return $el;
 	},
 	_lockFocusEvent: function(event) {
 		var focused = event.originalTarget,
 			focusables = event.data.focusables,
-			modal = event.data.modal;
-		if ( focusables.index(focused) === -1 ) {
+			modal = event.data.modal,
+			previous = modal._focusedElement,
+			backwards = modal._shiftKey,
+			$el = event.data.el;
+		if ( focused !== $(document)[0] && focusables.index(focused) === -1 ) {
 			// has the dom inside the modal area been updated?
 			focusables = modal._sortedFocusables($el);
 			if ( focusables.index(focused) === -1 ) {
-				modal._nextItemByTabIndex(focusables, modal._focusedElement, modal._shiftKey).focus();
+				modal._nextItemByTabIndex(focusables, previous, backwards).focus();
 			}
 		}
 	},
@@ -842,9 +848,11 @@ $.extend($.ui.dialog.overlay.prototype, {
 		this._untrackFocusedElement($el);
 		this._untrackShiftKey(focusables);
 		$(document).unbind('focusin', this._lockFocusEvent);
+		return $el;
 	},
 	_nextItemByTabIndex: function($list, previous, backwards) {
-		var index = $list.index(previous);
+		var index = $list.index(previous),
+			oldIndex = index;
 		if ( !backwards ) {
 			index = ( index>-1 && index<$list.size()-1 ) ? index+1 : 0;
 		} else {
@@ -855,30 +863,46 @@ $.extend($.ui.dialog.overlay.prototype, {
 	_shiftKey: false,
 	_focusedElement: null,
 	_trackFocusedElement: function($list, store) {
-		$list.bind('focusin', {store:store}, this._trackFocusedElementEvent);
-		return $list;
+		return $list.bind('focusin', {store:store}, this._trackFocusedElementEvent);
 	},
 	_trackFocusedElementEvent: function(event) {
 		event.data.store._focusedElement = event.originalTarget;
 	},
 	_untrackFocusedElement: function($list) {
-		$list.unbind('focusin', this._trackFocusedElementEvent);
-		return $list;
+		return $list.unbind('focusin', this._trackFocusedElementEvent);
 	},
 	_trackShiftKey: function($focusables, store) {
-		$focusables.bind('keydown', {store:store}, this._trackShiftKeyEvent);
-		return $focusables;
+		return $focusables.bind('keydown', {store:store}, this._trackShiftKeyEvent);
 	},
 	_trackShiftKeyEvent: function(event) {
 		if ( event.keyCode !== $.ui.keyCode.TAB ) return;
 		event.data.store._shiftKey = event.shiftKey;
 	},
 	_untrackShiftKey: function($focusables) {
-		$focusables.unbind('keydown', this._trackShiftKeyEvent);
-		return $list;
+		return $focusables.unbind('keydown', this._trackShiftKeyEvent);
 	},
 	_sortedFocusables: function($el) {
-		return $(':focusable', $el).sort(function(a,b){return parseInt(a.tabIndex)-parseInt(b.tabIndex);});
+		return $(':focusable', $el).sort(function(a,b){
+			return parseInt(a.tabIndex,10)-parseInt(b.tabIndex,10);
+		});
+	},
+	_captureTabOutOfLastElement: function($el) {
+		var focusables = $(':tabbable', $el),
+			last = focusables.last()
+			first = focusables.filter('input,select,textarea').first();
+		last.bind('keypress', {modal:this, el:$el, focusables:focusables, forwards:true}, this._captureTabOutOfLastElementEvent);
+		first.bind('keypress', {modal:this, el:$el, focusables:focusables, forwards:false}, this._captureTabOutOfLastElementEvent);
+	},
+	_captureTabOutOfLastElementEvent: function(event) {
+		var forwards = event.data.forwards;
+		if ( event.keyCode !== $.ui.keyCode.TAB || (event.shiftKey==forwards) ) return;
+		var focusables = event.data.focusables,
+			modal = event.data.modal,
+			$el = event.data.el,
+			sortedFocusables = modal._sortedFocusables($el);
+		modal._nextItemByTabIndex(sortedFocusables, this, !forwards).focus();
+		
+		return false;
 	}
 	
 });
