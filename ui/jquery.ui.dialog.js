@@ -823,24 +823,26 @@ $.extend($.ui.dialog.overlay.prototype, {
 		var focusables = this._sortedFocusables($el);
 		this._trackFocusedElement( $el, this);
 		this._trackShiftKey( focusables, this);
-		var modal = this;
-		$(document).bind('focusin', function(event) {
-			var focused = event.originalTarget;
-			if ( focusables.index(focused) == -1 ) {
-				// has the dom inside the modal area been updated?
-				focusables = modal._sortedFocusables($el);
-				if ( focusables.index(focused) == -1 ) {
-					modal._nextItemByTabIndex(focusables, modal._focusedElement, modal._shiftKey).focus();
-				}
+		$(document).bind('focusin', {modal:this, focusables:focusables}, this._lockFocusEvent);
+	},
+	_lockFocusEvent: function(event) {
+		var focused = event.originalTarget,
+			focusables = event.data.focusables,
+			modal = event.data.modal;
+		if ( focusables.index(focused) === -1 ) {
+			// has the dom inside the modal area been updated?
+			focusables = modal._sortedFocusables($el);
+			if ( focusables.index(focused) === -1 ) {
+				modal._nextItemByTabIndex(focusables, modal._focusedElement, modal._shiftKey).focus();
 			}
-		});
+		}
 	},
 	unlockFocus: function($el) {
 		var focusables = this._sortedFocusables($el);
 		this._untrackFocusedElement($el);
 		this._untrackShiftKey(focusables);
-		$(document).unbind('focusin');
-	}
+		$(document).unbind('focusin', this._lockFocusEvent);
+	},
 	_nextItemByTabIndex: function($list, previous, backwards) {
 		var index = $list.index(previous);
 		if ( !backwards ) {
@@ -853,7 +855,7 @@ $.extend($.ui.dialog.overlay.prototype, {
 	_shiftKey: false,
 	_focusedElement: null,
 	_trackFocusedElement: function($list, store) {
-		$list.bind('focusin', {store:this}, this._trackFocusedElementEvent);
+		$list.bind('focusin', {store:store}, this._trackFocusedElementEvent);
 		return $list;
 	},
 	_trackFocusedElementEvent: function(event) {
@@ -864,7 +866,7 @@ $.extend($.ui.dialog.overlay.prototype, {
 		return $list;
 	},
 	_trackShiftKey: function($focusables, store) {
-		$focusables.bind('keydown', {store:this}, this._trackShiftKeyEvent);
+		$focusables.bind('keydown', {store:store}, this._trackShiftKeyEvent);
 		return $focusables;
 	},
 	_trackShiftKeyEvent: function(event) {
