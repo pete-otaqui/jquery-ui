@@ -887,11 +887,14 @@ $.extend($.ui.dialog.overlay.prototype, {
 		});
 	},
 	_captureTabOutOfLastElement: function($el) {
+		// now capture tabbing out of the first and last elements
+		// in source order (rather than tab order) to stop getting out of
+		// thepage in to the browser chrome
 		var focusables = $(':tabbable', $el),
 			last = focusables.last()
 			first = focusables.filter('input,select,textarea').first();
-		last.bind('keypress', {modal:this, el:$el, focusables:focusables, forwards:true}, this._captureTabOutOfLastElementEvent);
-		first.bind('keypress', {modal:this, el:$el, focusables:focusables, forwards:false}, this._captureTabOutOfLastElementEvent);
+		last.bind('keydown', {modal:this, el:$el, focusables:focusables, forwards:true}, this._captureTabOutOfLastElementEvent);
+		first.bind('keydown', {modal:this, el:$el, focusables:focusables, forwards:false}, this._captureTabOutOfLastElementEvent);
 	},
 	_captureTabOutOfLastElementEvent: function(event) {
 		var forwards = event.data.forwards;
@@ -903,6 +906,13 @@ $.extend($.ui.dialog.overlay.prototype, {
 		modal._nextItemByTabIndex(sortedFocusables, this, !forwards).focus();
 		
 		return false;
+	},
+	unCaptureTabOutOfLastElement: function($el) {
+		var focusables = $(':tabbable', $el),
+			last = focusables.last()
+			first = focusables.filter('input,select,textarea').first();
+		last.unbind('keydown', this._captureTabOutOfLastElementEvent);
+		first.unbind('keydown', this._captureTabOutOfLastElementEvent);
 	}
 	
 });
