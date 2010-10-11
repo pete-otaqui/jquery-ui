@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Dialog Visual Test : Default</title>
+	<link rel="stylesheet" href="../visual.css" type="text/css" />
+	<link rel="stylesheet" href="../../../themes/base/jquery.ui.all.css" type="text/css">
+	<script type="text/javascript" src="../../../jquery-1.4.2.js"></script>
+	<script type="text/javascript" src="../../../external/jquery.bgiframe-2.1.1.js"></script>
+	<script type="text/javascript" src="../../../ui/jquery.ui.core.js"></script>
+	<script type="text/javascript" src="../../../ui/jquery.ui.widget.js"></script>
+	<script type="text/javascript" src="../../../ui/jquery.ui.modal.js"></script>
+	<script type="text/javascript">
+	$(function() {
+		$("#modal").modal();
+		$("#openModal").click(function(e){
+			$("#modal").modal("open");
+		});
+		$("#closeModal").click(function(e){
+			$("#modal").modal("close");
+		});
+	});
+	</script>
+</head>
+<body>
+<input />
+<input />
+<div id="modal">
+	<h2>
+		Modal Content
+	</h2>
+	<p>N.B. All the values on the inputs in this page are the tabindex same as their tabindex attributes</p>
+	<input tabindex="1" value="1" />
+	<input id="first" /><br />
+	<input tabindex="20" value="20" />
+	<input tabindex="30" value="30" /><br />
+	<input id="second" />
+	<input tabindex="0" value="0" /><br />
+	<input />
+	<input /><br />
+	<input tabindex="5" value="5" />
+	<input id="third" /><br />
+	<input id="fourth" />
+	<button id="closeModal">Close Modal</button>
+</div>
+<input tabindex="25" value="25" />
+<input />
+<input />
+<button id="openModal">Open Modal</button>
+</body>
+</html>
