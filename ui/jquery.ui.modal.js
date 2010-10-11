@@ -22,6 +22,8 @@ $.widget("ui.modal", {
 		this.element.show();
 		this._overlay.show();
 		this._lockFocus(this.element);
+		$('body').css('height', '100%');
+		$('html').css('height', '100%');
 	},
 	close: function() {
 		this.element.hide();
@@ -34,7 +36,7 @@ $.widget("ui.modal", {
 	destroy: function() {
 		this._overlay.destroy();
 		$.ui.widget.prototype.destroy.call(this);
-	}
+	},
 	
 	/**
 	 * This method should be called whenever the dom inside the overlay is updated.
@@ -195,7 +197,7 @@ $.widget("ui.modal", {
 	 */
 	_captureTabOutOfEdgeElements: function($el) {
 		var focusables = $(':tabbable', $el),
-			last = focusables.last();
+			last = focusables.last(),
 			first = focusables.filter('input,select,textarea').first();
 		last.bind('keydown', {modal:this, el:$el, focusables:focusables, forwards:true}, this._captureTabOutOfEdgeElementsEvent);
 		first.bind('keydown', {modal:this, el:$el, focusables:focusables, forwards:false}, this._captureTabOutOfEdgeElementsEvent);
