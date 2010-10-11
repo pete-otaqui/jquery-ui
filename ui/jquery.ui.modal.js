@@ -26,9 +26,11 @@ $.widget("ui.modal", {
 		$('html').css('height', '100%');
 	},
 	close: function() {
+		this._unlockFocus(this.element);
 		this.element.hide();
 		this._overlay.hide();
-		this._unlockFocus(this.element);
+		$('body').css('height', '');
+		$('html').css('height', '');
 	},
 	widget: function() {
 		return this._overlay;
@@ -41,10 +43,11 @@ $.widget("ui.modal", {
 	/**
 	 * This method should be called whenever the dom inside the overlay is updated.
 	 * Delegation is possibly a better solution, but ultimately we would still need
-	 * to refresh the list of "focusables" anyway, since we want to be able to jump
-	 * back in to the list - and delegation does not solve that.
+	 * to refresh the list of "focusables" anyway, since we need to be able to jump
+	 * back in to the list (and something might have been deleted or disabled) and
+	 * delegation does not solve that.
 	 */
-	update: function() {
+	refreshFocusLock: function() {
 		this._unlockFocus(this.element);
 		this._lockFocus(this.element);
 	},
@@ -94,7 +97,7 @@ $.widget("ui.modal", {
 	 * event for _lockFocus, separated for safe unbinding
 	 */
 	_lockFocusEvent: function(event) {
-		var focused = event.originalTarget,
+		var focused = event.originalTarget || event.srcElement,
 			focusables = event.data.focusables,
 			modal = event.data.modal,
 			previous = modal._focusedElement,
@@ -102,6 +105,17 @@ $.widget("ui.modal", {
 			$el = event.data.el;
 		if ( focused !== $(document)[0] && focusables.index(focused) === -1 ) {
 			modal._nextItemByTabIndex(focusables, previous, backwards).focus();
+		}
+	},
+	/**
+	 * closes modal on escape keypress
+	 */
+	_closeOnEscapeEvent: function(event) {
+		if ( event.keyCode === $.ui.keyCode.ESCAPE ) {
+			// call the close method
+			event.data.modal.close();
+			// stop bubbling
+			return false;
 		}
 	},
 	/**
@@ -115,15 +129,6 @@ $.widget("ui.modal", {
 		$(document).unbind('focusin', this._lockFocusEvent);
 		$el.unbind('keypress', this._closeOnEscapeEvent);
 		return $el;
-	},
-	/**
-	 * closes modal on escape keypress
-	 */
-	_closeOnEscapeEvent: function(event) {
-		if ( event.keyCode === $.ui.keyCode.ESCAPE ) {
-			event.data.modal.close();
-			return false;
-		}
 	},
 	
 	/**
@@ -156,7 +161,7 @@ $.widget("ui.modal", {
 	 * event to track focused element
 	 */
 	_trackFocusedElementEvent: function(event) {
-		event.data.store._focusedElement = event.originalTarget;
+		event.data.store._focusedElement = event.originalTarget || event.srcElement;
 	},
 	/**
 	 * stop tracking focused element
@@ -227,11 +232,23 @@ $.widget("ui.modal", {
 	},
 	
 	/**
-	 * utility method to sort an elements focusable children by tabIndex
+	 * utility method to sort an elements focusable children by tabIndex.
+	 * note that since ECMAScript does not guarantee stability in .sort()
+	 * comparison functions, we actually enforce this to mimic tabindex
+	 * and then source-order style sorting.
 	 */
 	_sortedFocusables: function($el) {
+		var focusables = $(':focusable', $el),
+			originals = focusables.toArray();
 		return $(':focusable', $el).sort(function(a,b){
-			return parseInt(a.tabIndex,10)-parseInt(b.tabIndex,10);
+			var a1 = parseInt(a.tabIndex||0,10),
+				b1 = parseInt(b.tabIndex||0,10);
+			if ( a1 == b1 ) {
+				var a2 = $.inArray(a, originals);
+				var b2 = $.inArray(b, originals);
+				return a2 - b2;
+			}
+			return a1 - b1;
 		});
 	}
 });
