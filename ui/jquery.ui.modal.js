@@ -51,7 +51,7 @@ $.widget("ui.modal", {
 		return this._overlay;
 	},
 	destroy: function() {
-		this._overlay.destroy();
+		this._overlay.remove();
 		$.ui.widget.prototype.destroy.call(this);
 	},
 	
