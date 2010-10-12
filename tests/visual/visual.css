@@ -2,4 +2,4 @@ body { font-size: 62.5%; }
 #draggable, #resizable { width: 100px; height: 100px; background: #abc; }
 #droppable { width: 100px; height: 100px; background: #cde; }
 
-#modal, #modalWithDialog { background-color:#fff; padding:20px;}
+#modal, #modalWithIndexes { background-color:#fff; padding:20px;}

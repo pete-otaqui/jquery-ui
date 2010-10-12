@@ -6,24 +6,39 @@ $.widget("ui.modal", {
 		autoOpen: false,
 		closeOnEscape: true,
 		overlay: true,
-		overlayColor: '#000000',
-		overlayOpacity: 0.5
+		position: {
+			my: 'center',
+			at: 'center',
+			of: window,
+			collision: 'fit',
+			// ensure that the titlebar is never outside the document
+			using: function(pos) {
+				var topOffset = $(this).css(pos).offset().top;
+				if (topOffset < 0) {
+					$(this).css('top', pos.top - topOffset);
+				}
+			}
+		}
 	},
+	
+	_zIndex: 999999,
 	
 	_create: function() {
 		this._makeOverlay();
-		this.element.css({
-			zIndex: 999999,
-			position: 'absolute'	
-		}).hide();
+		this.element
+			.css({
+				zIndex: this._zIndex,
+				position: 'absolute'	
+			})
+			.addClass('ui-widget')
+			.hide();
 		if ( this.options.autoOpen ) this.open();
 	},
 	open: function() {
 		this.element.show();
+		this._position(this.options.position);
 		this._overlay.show();
 		this._lockFocus(this.element);
-		$('body').css('height', '100%');
-		$('html').css('height', '100%');
 	},
 	close: function() {
 		this._unlockFocus(this.element);
@@ -61,16 +76,19 @@ $.widget("ui.modal", {
 		this._overlay = $('<div class="ui-widget ui-widget-reset ui-modal-overlay"></div>')
 			.appendTo(document.body)
 			.css({
-				zIndex: 999998,
+				zIndex: this._zIndex - 1,
 				position: 'absolute',
-				width: '100%',
-				height: '100%',
+				width: this._overlayWidth(),
+				height: this._overlayHeight(),
 				top: '0px',
 				left: '0px',
-				backgroundColor: this.options.overlayColor,
-				opacity: this.options.overlayOpacity
+				backgroundColor: '#000000',
+				opacity: 0.5
 			})
 			.hide();
+		if ($.fn.bgiframe) {
+			this._overlay.bgiframe();
+		}
 		return this._overlay;
 	},
 	_destroyOverlay: function() {
@@ -250,6 +268,68 @@ $.widget("ui.modal", {
 			}
 			return a1 - b1;
 		});
+	},
+	
+	
+	
+
+	_overlayHeight: function() {
+		var scrollHeight,
+			offsetHeight;
+		// handle IE 6
+		if ($.browser.msie && $.browser.version < 7) {
+			scrollHeight = Math.max(
+				document.documentElement.scrollHeight,
+				document.body.scrollHeight
+			);
+			offsetHeight = Math.max(
+				document.documentElement.offsetHeight,
+				document.body.offsetHeight
+			);
+
+			if (scrollHeight < offsetHeight) {
+				return $(window).height() + 'px';
+			} else {
+				return scrollHeight + 'px';
+			}
+		// handle "good" browsers
+		} else {
+			return $(document).height() + 'px';
+		}
+	},
+
+	_overlayWidth: function() {
+		var scrollWidth,
+			offsetWidth;
+		// handle IE 6
+		if ($.browser.msie && $.browser.version < 7) {
+			scrollWidth = Math.max(
+				document.documentElement.scrollWidth,
+				document.body.scrollWidth
+			);
+			offsetWidth = Math.max(
+				document.documentElement.offsetWidth,
+				document.body.offsetWidth
+			);
+
+			if (scrollWidth < offsetWidth) {
+				return $(window).width() + 'px';
+			} else {
+				return scrollWidth + 'px';
+			}
+		// handle "good" browsers
+		} else {
+			return $(document).width() + 'px';
+		}
+	},
+	
+	_position: function(position) {
+		// fixes an IE bug with calculating left:/top:auto
+		this.element.css({
+			left: '0',
+			top: '0'
+		});
+		this.element.position(this.options.position);
 	}
 });
 	
